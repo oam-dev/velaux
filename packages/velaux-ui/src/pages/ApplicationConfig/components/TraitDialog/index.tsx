@@ -195,12 +195,26 @@ class TraitDialog extends React.Component<Props, State> {
       .then((re) => {
         if (re) {
           this.setState({ definitionDetail: re, definitionLoading: false });
-          if (callback) {
-            callback();
-          }
+          this.setDefaultProperties(re)
+            if (callback) {
+              callback();
+            }
         }
       })
       .catch(() => this.setState({ definitionLoading: false }));
+  };
+
+  setDefaultProperties = (definitionDetail: any) => {
+    const properties = definitionDetail.schema?.properties;
+    if (properties) {
+        const defaultValues: Record<string, any> = {};
+        for (const key in properties) {
+            if (properties[key].default !== undefined) {
+                defaultValues[key] = properties[key].default;
+            }
+        }
+        this.field.setValues({ properties: defaultValues });
+    }
   };
 
   handleTypeChange = (value: string) => {
