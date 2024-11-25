@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -62,6 +63,8 @@ const (
 	labelContext  = "pipeline.oam.dev/context"
 	labelPipeline = "pipeline.oam.dev/name"
 )
+
+var re = regexp.MustCompile(`"((?:[^"\\]|\\.)*)"`)
 
 // PipelineService is the interface for pipeline service
 type PipelineService interface {
@@ -489,10 +492,23 @@ func (p pipelineRunServiceImpl) GetPipelineRunLog(ctx context.Context, pipelineR
 	var logs string
 	switch {
 	case logConfig.Data:
+		var id string
+		for _, s := range pipelineRun.Status.Steps {
+			if s.Name == step {
+				id = s.ID
+				break
+			}
+			for _, sub := range s.SubStepsStatus {
+				if sub.Name == step {
+					id = sub.ID
+					break
+				}
+			}
+		}
 		logs, err = getResourceLogs(ctx, p.KubeConfig, p.KubeClient, []wfTypes.Resource{{
 			Namespace:     velatypes.DefaultKubeVelaNS,
 			LabelSelector: map[string]string{"app.kubernetes.io/name": "vela-workflow"},
-		}}, []string{fmt.Sprintf(`step_name="%s"`, step), fmt.Sprintf("%s/%s", project.GetNamespace(), pipelineRun.PipelineRunName), "cue logs"})
+		}}, []string{fmt.Sprintf(`stepSessionID="%s"`, id), fmt.Sprintf("%s/%s", project.GetNamespace(), pipelineRun.PipelineRunName), "cue logs"})
 		if err != nil {
 			return apis.GetPipelineRunLogResponse{}, err
 		}
@@ -682,6 +698,10 @@ func getResourceLogs(ctx context.Context, config *rest.Config, cli client.Client
 					}
 				}
 				if shouldPrint {
+					match := re.FindStringSubmatch(s)
+					if len(match) > 1 {
+						s = strings.ReplaceAll(match[1], "\\n", "\n")
+					}
 					buf.WriteString(s)
 				}
 			}
