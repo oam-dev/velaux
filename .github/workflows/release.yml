@@ -18,7 +18,7 @@ jobs:
         if [[ ${GITHUB_REF} == "refs/heads/main" ]]; then
           VERSION=latest
         fi
-        echo ::set-output name=VERSION::${VERSION}
+        echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
     - name: Get git revision
       id: vars
       shell: bash
