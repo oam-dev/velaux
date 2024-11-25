@@ -26,6 +26,10 @@ import { checkName } from '../../../../utils/common';
 import { locale } from '../../../../utils/locale';
 import { transComponentDefinitions } from '../../../../utils/utils';
 
+import { DefinitinPluginRoot } from '../../../../layout/AppRootPage';
+import { PluginMeta, PluginType } from '@velaux/data';
+import { getPluginSrv } from '../../../../services/PluginService';
+
 import './index.less';
 
 import Permission from '../../../../components/Permission';
@@ -52,6 +56,7 @@ type State = {
   editComponent?: ApplicationComponent;
   loading: boolean;
   propertiesMode: string;
+  plugins: PluginMeta[];
 };
 
 @connect()
@@ -66,6 +71,7 @@ class ComponentDialog extends React.Component<Props, State> {
       isUpdateComponentLoading: false,
       loading: true,
       propertiesMode: 'native',
+      plugins: []
     };
     this.uiSchemaRef = React.createRef();
   }
@@ -102,6 +108,16 @@ class ComponentDialog extends React.Component<Props, State> {
       payload: project,
     });
   }
+
+  loadDefinitionPlugins = () => {
+    return getPluginSrv()
+      .listAppPagePlugins(PluginType.Definition)
+      .then((plugins) => {
+        this.setState({
+          plugins: plugins
+        });
+      });
+  };
 
   onGetEditComponentInfo(callback?: () => void) {
     const { appName, componentName } = this.props;
@@ -312,11 +328,15 @@ class ComponentDialog extends React.Component<Props, State> {
     const init = this.field.init;
     const FormItem = Form.Item;
     const { Row, Col } = Grid;
-    const { isEditComponent, componentDefinitions, onComponentClose } = this.props;
-    const { definitionDetail, loading, propertiesMode } = this.state;
+    const { isEditComponent, componentDefinitions, onComponentClose, project } = this.props;
+    const { definitionDetail, loading, propertiesMode, plugins } = this.state;
     const validator = (rule: Rule, value: any, callback: (error?: string) => void) => {
       this.uiSchemaRef.current?.validate(callback);
     };
+
+    const componentType: string = this.field.getValue('componentType') || '';
+    const plugin = plugins.find(o => o?.position === "definition.component." + componentType);
+    const usePlugin = componentType && plugin;
 
     return (
       <DrawerWithFooter
@@ -457,27 +477,27 @@ class ComponentDialog extends React.Component<Props, State> {
             subTitle={
               definitionDetail && definitionDetail.uiSchema
                 ? [
-                    <Button
-                      style={{ alignItems: 'center', display: 'flex' }}
-                      onClick={() => {
-                        if (propertiesMode === 'native') {
-                          this.setState({ propertiesMode: 'code' });
-                        } else {
-                          this.setState({ propertiesMode: 'native' });
-                        }
-                      }}
-                    >
-                      {propertiesMode === 'native' && (
-                        <BiCodeBlock size={14} title={i18n.t('Switch to the coding mode')} />
-                      )}
-                      {propertiesMode === 'code' && <BiLaptop size={14} title={i18n.t('Switch to the native mode')} />}
-                    </Button>,
-                  ]
+                  <Button
+                    style={{ alignItems: 'center', display: 'flex' }}
+                    onClick={() => {
+                      if (propertiesMode === 'native') {
+                        this.setState({ propertiesMode: 'code' });
+                      } else {
+                        this.setState({ propertiesMode: 'native' });
+                      }
+                    }}
+                  >
+                    {propertiesMode === 'native' && (
+                      <BiCodeBlock size={14} title={i18n.t('Switch to the coding mode')} />
+                    )}
+                    {propertiesMode === 'code' && <BiLaptop size={14} title={i18n.t('Switch to the native mode')} />}
+                  </Button>,
+                ]
                 : []
             }
           >
             <Row>
-              <If condition={definitionDetail}>
+              <If condition={!usePlugin && definitionDetail}>
                 <UISchema
                   {...init(`properties`, {
                     rules: [
@@ -497,6 +517,20 @@ class ComponentDialog extends React.Component<Props, State> {
                   ref={this.uiSchemaRef}
                   mode={isEditComponent ? 'edit' : 'new'}
                 />
+              </If>
+              <If condition={usePlugin}>
+                <DefinitinPluginRoot
+                  pluginId={plugin ? plugin.id : ""}
+                  project={project}
+                  {...init(`properties`, {
+                    rules: [
+                      {
+                        validator: validator,
+                        message: i18n.t('Please check the component properties'),
+                      },
+                    ],
+                  })}
+                  ref={this.uiSchemaRef} />
               </If>
             </Row>
           </Card>

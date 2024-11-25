@@ -1899,6 +1899,7 @@ type PluginDTO struct {
 	// there are four sub types in the definition plugin type, includes: component, trait, policy ,and workflow-step.
 	SubType       string                  `json:"subType"`
 	Name          string                  `json:"name"`
+	Position      string                  `json:"position"`
 	Info          pluginTypes.Info        `json:"info"`
 	Includes      []*pluginTypes.Includes `json:"includes"`
 	Category      string                  `json:"category"`

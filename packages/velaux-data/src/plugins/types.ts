@@ -61,6 +61,7 @@ export interface PluginMeta<T extends KeyValue = {}> extends PluginLink, SourceA
   // System.load & relative URLS
   module: string;
   baseUrl: string;
+  position?: string;
 
   // Define plugin requirements
   dependencies?: PluginDependencies;

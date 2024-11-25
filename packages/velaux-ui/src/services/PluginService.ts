@@ -7,7 +7,7 @@ import _ from 'lodash'; // eslint-disable-line lodash/import-scope
 import moment from 'moment'; // eslint-disable-line no-restricted-imports
 import react from 'react';
 import * as velauxData from '@velaux/data'; // eslint-disable-line no-restricted-imports
-import { AppPagePlugin, PluginLink, PluginMeta, PluginType } from '@velaux/data';
+import { AppPagePlugin, PluginMeta, PluginType } from '@velaux/data';
 import * as velauxUI from '../types'; // eslint-disable-line no-restricted-imports
 import * as ReactDom from 'react-dom';
 import * as DvaRouter from 'dva/router';
@@ -85,9 +85,9 @@ export function importAppPagePlugin(meta: PluginMeta): Promise<AppPagePlugin> {
  * A wrapper to generate the menu configs
  */
 export interface PluginService {
-  listAppPagePlugins(): Promise<PluginMeta[]>;
+  listAppPagePlugins(type: PluginType): Promise<PluginMeta[]>;
 
-  loadMeta(pluginID: string): Promise<PluginMeta | PluginLink>;
+  loadMeta(pluginID: string): Promise<PluginMeta>;
 }
 
 /** @internal */
@@ -95,13 +95,13 @@ export class PluginWrapper implements PluginService {
   constructor() {
   }
 
-  listAppPagePlugins(): Promise<PluginMeta[]> {
+  listAppPagePlugins(type = PluginType.PageApp): Promise<PluginMeta[]> {
     return getBackendSrv()
       .get('/api/v1/plugins')
       .then((res: any) => {
         if (res) {
           const plugins = res.plugins ? (res.plugins as PluginMeta[]) : [];
-          return Promise.resolve(plugins.filter((p) => p.type === PluginType.PageApp));
+          return Promise.resolve(plugins.filter((p) => p.type === type));
         }
         return Promise.reject(new Error('Unknown Plugins'));
       });

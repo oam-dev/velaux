@@ -12,7 +12,11 @@ import { If } from '../../../../components/If';
 import { Translation } from '../../../../components/Translation';
 import UISchema from '../../../../components/UISchema';
 import i18n from '../../../../i18n';
-import type { ApplicationComponent, DefinitionDetail, Trait , DefinitionBase } from '@velaux/data';
+import type { ApplicationComponent, DefinitionDetail, Trait, DefinitionBase } from '@velaux/data';
+
+import { DefinitinPluginRoot } from '../../../../layout/AppRootPage';
+import { PluginMeta, PluginType } from '@velaux/data';
+import { getPluginSrv } from '../../../../services/PluginService';
 
 type Props = {
   project: string;
@@ -38,6 +42,7 @@ type State = {
   podDisruptive?: any;
   component?: ApplicationComponent;
   propertiesMode: 'native' | 'code';
+  plugins: PluginMeta[];
 };
 @connect()
 class TraitDialog extends React.Component<Props, State> {
@@ -50,6 +55,7 @@ class TraitDialog extends React.Component<Props, State> {
       isLoading: false,
       traitDefinitions: [],
       propertiesMode: 'native',
+      plugins: []
     };
     this.field = new Field(this);
     this.uiSchemaRef = React.createRef();
@@ -81,6 +87,16 @@ class TraitDialog extends React.Component<Props, State> {
       });
     });
   }
+
+  loadDefinitionPlugins = () => {
+    return getPluginSrv()
+      .listAppPagePlugins(PluginType.Definition)
+      .then((plugins) => {
+        this.setState({
+          plugins: plugins
+        });
+      });
+  };
 
   onGetComponentInfo(callback: () => void) {
     const { appName, componentName } = this.props;
@@ -273,13 +289,16 @@ class TraitDialog extends React.Component<Props, State> {
     const init = this.field.init;
     const FormItem = Form.Item;
     const { Row, Col } = Grid;
-    const { onClose, isEditTrait } = this.props;
-    const { definitionDetail, definitionLoading, podDisruptive, propertiesMode } = this.state;
+    const { onClose, isEditTrait, project } = this.props;
+    const { definitionDetail, definitionLoading, podDisruptive, propertiesMode, plugins } = this.state;
     const validator = (rule: Rule, value: any, callback: (error?: string) => void) => {
       this.uiSchemaRef.current?.validate(callback);
     };
-    const traitType: string = this.field.getValue('type');
 
+    const traitType: string = this.field.getValue('type');
+    const plugin = plugins.find(o => o?.position === "definition.trait." + traitType);
+    const usePlugin = traitType && plugin;
+   
     return (
       <DrawerWithFooter
         title={this.showTraitTitle()}
@@ -397,26 +416,42 @@ class TraitDialog extends React.Component<Props, State> {
                 <Loading visible={definitionLoading}>
                   <If condition={definitionDetail}>
                     <FormItem required={true}>
-                      <UISchema
-                        key={traitType}
-                        {...init(`properties`, {
-                          rules: [
-                            {
-                              validator: validator,
-                              message: i18n.t('Please check trait deploy properties'),
-                            },
-                          ],
-                        })}
-                        enableCodeEdit={propertiesMode === 'code'}
-                        uiSchema={definitionDetail && definitionDetail.uiSchema}
-                        definition={{
-                          type: 'trait',
-                          name: definitionDetail?.name || '',
-                          description: definitionDetail?.description || '',
-                        }}
-                        ref={this.uiSchemaRef}
-                        mode={this.props.isEditTrait ? 'edit' : 'new'}
-                      />
+                      <If condition={!usePlugin}>
+                        <UISchema
+                          key={traitType}
+                          {...init(`properties`, {
+                            rules: [
+                              {
+                                validator: validator,
+                                message: i18n.t('Please check trait deploy properties'),
+                              },
+                            ],
+                          })}
+                          enableCodeEdit={propertiesMode === 'code'}
+                          uiSchema={definitionDetail && definitionDetail.uiSchema}
+                          definition={{
+                            type: 'trait',
+                            name: definitionDetail?.name || '',
+                            description: definitionDetail?.description || '',
+                          }}
+                          ref={this.uiSchemaRef}
+                          mode={this.props.isEditTrait ? 'edit' : 'new'}
+                        />
+                      </If>
+                      <If condition={usePlugin}>
+                        <DefinitinPluginRoot
+                          pluginId={plugin ? plugin.id : ""}
+                          project={project}
+                          {...init(`properties`, {
+                            rules: [
+                              {
+                                validator: validator,
+                                message: i18n.t('Please check trait deploy properties'),
+                              },
+                            ],
+                          })}
+                          ref={this.uiSchemaRef} />
+                      </If>
                     </FormItem>
                   </If>
                   <If condition={!definitionDetail}>

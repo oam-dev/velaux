@@ -15,6 +15,8 @@ import { MdConfirmationNumber } from 'react-icons/md';
 import { locationService } from './LocationService';
 import { checkPermission } from '../utils/permission';
 import { getPluginSrv } from './PluginService';
+import { PluginType } from '@velaux/data';
+
 
 const defaultWorkspaces: Workspace[] = [
   {
@@ -212,7 +214,7 @@ export class MenuWrapper implements MenuService {
       return Promise.resolve(this.menus);
     }
     return getPluginSrv()
-      .listAppPagePlugins()
+      .listAppPagePlugins(PluginType.PageApp)
       .then((plugins) => {
         plugins.map((plugin) => {
           plugin.includes?.map((include) => {

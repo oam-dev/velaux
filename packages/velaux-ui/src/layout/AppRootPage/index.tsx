@@ -13,9 +13,15 @@ interface Props {
   dispatch: any;
   pluginList: PluginMeta[];
   loading: any;
+  project?: string;
 }
 
-function RootPage({ pluginId }: Props) {
+interface DefinitinProps {
+  pluginId: string;
+  project?: string;
+}
+
+function RootPage({ pluginId, ...rest }: Props | DefinitinProps, ref: React.ForwardedRef<any>) {
   const [app, setApp] = React.useState<AppPagePlugin>();
   React.useEffect(() => {
     loadAppPlugin(pluginId, setApp);
@@ -31,7 +37,7 @@ function RootPage({ pluginId }: Props) {
   const AppRootPage = app.root
   return (
     <div>
-      <AppRootPage meta={app.meta} basename={locationService.getLocation().pathname} />
+      <AppRootPage meta={app.meta} basename={locationService.getLocation().pathname} {...rest} ref={ref}/>
     </div>
   );
 }
@@ -272,3 +278,4 @@ const mapStateToProps = (store: any) => ({
 
 export const AppConfigPage = connect(mapStateToProps)(ConfigPage)
 export const AppRootPage = connect(mapStateToProps)(RootPage)
+export const DefinitinPluginRoot = React.forwardRef(RootPage);
