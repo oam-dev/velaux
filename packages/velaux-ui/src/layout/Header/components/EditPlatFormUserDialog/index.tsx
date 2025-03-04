@@ -109,7 +109,7 @@ class EditPlatFormUserDialog extends Component<Props, State> {
                         {
                           required: true,
                           pattern: checkName,
-                          message: <Translation>You must input a valid name</Translation>,
+                          message: <Translation>You must input a valid name with alphanumeric character only</Translation>,
                         },
                       ],
                     })}
@@ -139,7 +139,7 @@ class EditPlatFormUserDialog extends Component<Props, State> {
                           pattern: checkUserPassword,
                           message: (
                             <Translation>
-                              Password should be 8-16 bits and contain at least one number and one letter
+                                Password must be alphanumeric, contain at least one letter and one number, and be 8-16 characters long
                             </Translation>
                           ),
                         },
